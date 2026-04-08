@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UXLens — Instant UX critique, clinically scored.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300;1,9..144,600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --ink: #0f0e0c; --ink2: #3a3830; --ink3: #7a7768;
+      --paper: #f5f2eb; --paper2: #edeae0; --paper3: #e2dfd4;
+      --accent: #c94f1e; --accent2: #e8915a;
+      --good: #2a6644; --warn: #e48d30; --bad: #b83020;
+      --mono: 'DM Mono', monospace; --serif: 'Fraunces', serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--paper); color: var(--ink); font-family: var(--mono); font-size: 13px; line-height: 1.6; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* NAV */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px; border-bottom: 1px solid var(--paper3);
+      position: sticky; top: 0; background: var(--paper); z-index: 10;
+    }
+    .wordmark { font-family: var(--serif); font-size: 20px; font-weight: 600; letter-spacing: -.02em; cursor: pointer; user-select: none; }
+    .wordmark em { color: var(--accent); font-style: italic; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .nav-badge { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); border: 1px solid var(--paper3); padding: 4px 9px; border-radius: 2px; }
+    .nav-btn { font-family: var(--mono); font-size: 11px; font-weight: 400; letter-spacing: .05em; padding: 7px 14px; border: 1.5px solid var(--paper3); border-radius: 2px; background: transparent; color: var(--ink2); cursor: pointer; transition: border-color .15s, color .15s; }
+    .nav-btn:hover { border-color: var(--ink2); color: var(--ink); }
+
+    /* LANDING */
+    .hero { padding: 80px 40px 56px; max-width: 800px; margin: 0 auto; text-align: center; }
+    .hero-eyebrow { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; opacity: 0; animation: fadeUp .5s .05s ease forwards; }
+    .hero-title { font-family: var(--serif); font-size: clamp(38px, 6vw, 64px); font-weight: 300; line-height: 1.08; letter-spacing: -.03em; margin-bottom: 22px; opacity: 0; animation: fadeUp .5s .15s ease forwards; }
+    .hero-title em { font-style: italic; color: var(--accent); }
+    .hero-sub { font-size: 13px; color: var(--ink3); line-height: 1.8; max-width: 440px; margin: 0 auto 40px; opacity: 0; animation: fadeUp .5s .25s ease forwards; }
+
+    .input-card { background: transparent; border: none; border-radius: 0; padding: 0; width: 427px; max-width: 100%; margin: 0 auto 14px; opacity: 0; animation: fadeUp .5s .35s ease forwards; }
+    .input-card.shake { animation: shake .35s ease; }
+    .url-input { width: 100%; font-family: var(--mono); font-size: 13px; padding: 0 14px; height: 32px; background: var(--paper); border: 1px solid var(--ink2); border-radius: 2px; outline: none; color: var(--ink); transition: border-color .15s; letter-spacing: .03em; }
+    .url-input:focus { border-color: var(--ink); }
+    .url-input::placeholder { color: var(--ink3); }
+
+    .upload-zone { background: var(--paper2); border: 1px solid var(--paper3); border-radius: 0; height: 157px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; cursor: pointer; transition: border-color .15s, background .15s, border-style .15s; position: relative; }
+    .upload-zone:hover, .upload-zone.drag-over { background: #ece6db; border: 1px dashed var(--accent); }
+    .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+    .preview-file { display: none; align-items: center; gap: 10px; font-size: 11px; color: var(--ink2); }
+    .preview-file.visible { display: flex; }
+    .preview-thumb { width: 40px; height: 30px; object-fit: cover; border-radius: 2px; border: 1px solid var(--paper3); }
+    .preview-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .preview-remove { color: var(--ink3); cursor: pointer; font-size: 14px; flex-shrink: 0; transition: color .15s; }
+    .preview-remove:hover { color: var(--accent); }
+
+    .run-btn { width: 100%; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; padding: 0; height: 32px; background: var(--accent); color: white; border: none; border-radius: 2px; cursor: pointer; transition: background .15s; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .run-btn:hover:not(:disabled) { background: #a8401a; }
+    .run-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* API key notice */
+    .api-notice { max-width: 560px; margin: 0 auto 0; background: var(--paper2); border: 1px solid var(--paper3); border-left: 3px solid var(--warn); border-radius: 0 4px 4px 0; padding: 12px 14px; font-size: 11px; color: var(--ink2); line-height: 1.65; opacity: 0; animation: fadeUp .5s .4s ease forwards; }
+    .api-notice a { color: var(--accent); }
+    .api-key-row { display: flex; gap: 8px; margin-top: 8px; }
+    /* Inline API key block — matches Figma Anthropic key component */
+    .api-key-block { background: var(--paper2); border: 1px solid var(--paper3); padding: 14px 15px; width: 427px; max-width: 100%; margin: 0 auto; }
+    .api-key-label { font-family: var(--mono); font-size: 11px; color: var(--ink); margin-bottom: 8px; }
+    .api-key-row { display: flex; gap: 8px; }
+    .api-key-input { flex: 1; font-family: var(--mono); font-size: 12px; padding: 0 12px; height: 32px; background: var(--paper); border: 1px solid var(--ink2); border-radius: 2px; outline: none; color: var(--ink); transition: border-color .15s; }
+    .api-key-input:focus { border-color: var(--ink); }
+    .api-key-input::placeholder { color: var(--ink3); }
+    .api-key-save { font-family: var(--mono); font-size: 12px; padding: 0 14px; height: 32px; border: 1px solid var(--accent); border-radius: 2px; background: transparent; color: var(--ink); cursor: pointer; white-space: nowrap; transition: background .15s; flex-shrink: 0; }
+    .api-key-save:hover { background: rgba(201,79,30,.06); }
+    .api-key-saved { font-family: var(--mono); font-size: 11px; color: var(--good); margin-top: 6px; display: none; }
+    .api-key-saved.visible { display: block; }
+
+    .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 24px; opacity: 0; animation: fadeUp .5s .45s ease forwards; }
+    .chip-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); align-self: center; }
+    .chip { font-size: 11px; padding: 4px 12px; background: var(--paper); border: 1px solid var(--paper3); border-radius: 20px; color: var(--ink2); cursor: pointer; transition: all .15s; }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* HIW */
+    .section-divider { border: none; border-top: 1px solid var(--paper3); margin: 56px 40px; }
+    .hiw { max-width: 800px; margin: 0 auto; padding: 0 40px 64px; }
+    .section-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink3); margin-bottom: 28px; text-align: center; }
+    .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; }
+    .step { padding: 19px 18px 36px 24px; background: var(--paper2); border-radius: 2px; min-height: 187px; }
+    .step-heading { font-family: var(--serif); font-weight: 300; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+    .step-num { font-size: 36px; color: var(--ink3); line-height: 1; }
+    .step-title { font-size: 16px; color: var(--ink); line-height: 1.2; }
+    .step-body { font-family: var(--mono); font-size: 10px; color: var(--ink2); line-height: 1.7; }
+
+    /* Rubric grid — compact tiles */
+    .rubric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; margin-bottom: 2px; }
+    .rubric-item { padding: 18px 20px; background: var(--paper2); border-radius: 0; }
+    .rubric-dot { width: 7px; height: 7px; border-radius: 50%; margin-bottom: 10px; }
+    .rubric-name { font-size: 12px; font-weight: 500; letter-spacing: .04em; color: var(--ink); margin-bottom: 4px; }
+    .rubric-desc { font-size: 11px; color: var(--ink3); line-height: 1.6; }
+
+    /* Dimension deep-dive rows */
+    .dimensions { display: flex; flex-direction: column; gap: 2px; }
+    .dim-row { background: var(--paper2); border-radius: 0; overflow: hidden; }
+    .dim-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; transition: background .15s; user-select: none; }
+    .dim-header:hover { background: var(--paper3); }
+    .dim-header-left { display: flex; align-items: center; gap: 10px; }
+    .dim-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dim-name { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .04em; color: var(--ink); }
+    .dim-tagline { font-family: var(--mono); font-size: 11px; color: var(--ink3); font-style: italic; }
+    .dim-chevron { font-size: 11px; color: var(--ink3); transition: transform .2s; flex-shrink: 0; }
+    .dim-row.open .dim-chevron { transform: rotate(90deg); }
+    .dim-body { display: none; padding: 0 20px 18px 37px; font-family: var(--mono); font-size: 11px; color: var(--ink2); line-height: 1.8; border-top: 1px solid var(--paper3); padding-top: 14px; }
+    .dim-row.open .dim-body { display: block; }
+
+    footer { border-top: 1px solid var(--paper3); padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; }
+    .footer-word { font-family: var(--serif); font-size: 14px; font-weight: 300; font-style: italic; color: var(--ink3); }
+    .footer-note { font-size: 11px; color: var(--ink3); }
+
+    /* LOADING */
+    .loading-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; padding: 40px; text-align: center; }
+    .loading-title { font-family: var(--serif); font-size: 30px; font-weight: 300; font-style: italic; color: var(--ink2); margin-bottom: 8px; }
+    .loading-subject { font-size: 11px; color: var(--ink3); margin-bottom: 48px; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .progress-track { width: 320px; height: 2px; background: var(--paper3); border-radius: 1px; margin-bottom: 36px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--accent); border-radius: 1px; width: 0%; transition: width .5s ease; }
+    .loading-steps { display: flex; flex-direction: column; gap: 12px; width: 320px; text-align: left; }
+    .loading-step { display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--ink3); opacity: .35; transition: opacity .3s; }
+    .loading-step.active { opacity: 1; color: var(--ink2); }
+    .loading-step.done { opacity: .5; }
+    .loading-step.done .lstep-dot { background: var(--good); }
+    .lstep-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--paper3); flex-shrink: 0; transition: background .3s; }
+    .loading-step.active .lstep-dot { background: var(--accent); animation: pulse 1s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ERROR */
+    .error-page { max-width: 560px; margin: 60px auto; padding: 0 40px; }
+    .error-card { background: var(--paper2); border: 1px solid var(--paper3); border-left: 3px solid var(--bad); border-radius: 0 4px 4px 0; padding: 24px; }
+    .error-title { font-family: var(--serif); font-size: 20px; font-style: italic; color: var(--bad); margin-bottom: 10px; }
+    .error-body { font-size: 12px; color: var(--ink2); line-height: 1.75; }
+    .error-opts { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .err-btn { font-family: var(--mono); font-size: 11px; padding: 8px 14px; border: 1px solid var(--paper3); border-radius: 2px; background: var(--paper); color: var(--ink2); cursor: pointer; transition: all .15s; }
+    .err-btn:hover { border-color: var(--ink3); color: var(--ink); }
+    .err-btn.primary { border-color: var(--accent); color: var(--accent); }
+
+    /* RESULTS */
+    .results-wrap { max-width: 700px; margin: 0 auto; padding: 24px 40px 60px; }
+
+    /* Audit source + action bar */
+    .results-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .audit-source { font-family: var(--serif); font-size: 12px; color: var(--ink); }
+
+    /* Action buttons — Figma spec */
+    .results-actions-row { display: flex; justify-content: space-between; align-items: center; }
+    .btn-download { font-family: var(--mono); font-size: 12px; font-weight: 400; padding: 0 9px; height: 32px; border: 1px solid var(--accent); border-radius: 2px; background: transparent; color: var(--ink); cursor: pointer; transition: background .15s; display: flex; align-items: center; gap: 6px; }
+    .btn-download:hover { background: rgba(201,79,30,.05); }
+    .btn-run { font-family: var(--mono); font-size: 12px; font-weight: 500; padding: 0 14px; height: 32px; border: none; border-radius: 2px; background: var(--accent); color: white; cursor: pointer; transition: background .15s; }
+    .btn-run:hover { background: #a8401a; }
+
+    /* Score + label layout — side by side, score right */
+    .overall { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 19px; gap: 16px; }
+    .overall-left { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .results-eyebrow { font-family: var(--serif); font-size: 12px; color: var(--ink); }
+    .overall-label { font-family: var(--serif); font-size: 20px; font-weight: 300; font-style: italic; color: var(--ink); margin-bottom: 0; }
+    .overall-summary { font-family: var(--mono); font-size: 12px; font-weight: 300; color: var(--ink2); line-height: 1.7; max-width: 360px; }
+    .big-score { font-family: var(--serif); font-size: 64px; font-weight: 300; line-height: 1; letter-spacing: -.04em; text-align: right; white-space: nowrap; }
+    .big-score sub { font-size: 24px; color: var(--ink3); font-weight: 300; vertical-align: baseline; }
+
+    /* Overall rating bar — 10 segments */
+    .scorebar { display: flex; gap: 3px; margin-bottom: 55px; }
+    .sb-seg { height: 4px; flex: 1; background: var(--paper3); }
+    .sb-seg.good { background: var(--good); } .sb-seg.warn { background: var(--warn); } .sb-seg.bad { background: var(--bad); }
+
+    /* Tabs — Fraunces 15px, active underline */
+    .view-tabs { display: flex; gap: 0; margin-bottom: 20px; }
+    .tab { font-family: var(--serif); font-size: 15px; font-weight: 300; padding: 0 30px 8px 0; color: var(--ink3); cursor: pointer; border-bottom: 1.5px solid transparent; transition: color .15s, border-color .15s; }
+    .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+    .tab-panel { display: none; padding-top: 0; }
+    .tab-panel.active { display: block; }
+
+    /* "Active" label above cards */
+    .cards-section-label { font-family: var(--serif); font-size: 12px; color: var(--ink); margin-bottom: 16px; }
+
+    /* Resolved section */
+    .resolved-section { margin-top: 32px; border-top: 1px solid var(--paper3); padding-top: 17px; }
+    .resolved-label { font-family: var(--serif); font-size: 12px; color: var(--ink); margin-bottom: 18px; }
+    .resolved-cards { display: flex; flex-direction: column; gap: 16px; }
+    .cat-row.resolved { opacity: .45; pointer-events: none; }
+
+
+    /* ── AUDIT/CARD (matches Figma) ── */
+    .cat-list { display: flex; flex-direction: column; gap: 22px; padding-top: 8px; }
+    .cat-row { border: 1.5px solid var(--paper3); border-radius: 0; padding: 0; cursor: pointer; transition: background .15s, border-color .15s; background: var(--paper); }
+    .cat-row:hover { background: var(--paper2); border-color: var(--paper2); }
+    .cat-row.open { background: var(--paper2); border-color: var(--paper3); }
+
+    /* collapsed inner — 4px top inset, 4% side, 9% bottom matching Figma */
+    .cat-collapsed { padding: 4px 14px 0 14px; display: flex; flex-direction: column; gap: 7px; }
+    .cat-header { display: flex; align-items: center; justify-content: space-between; }
+    .cat-name { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink2); font-weight: 500; font-family: var(--mono); }
+    .cat-right { display: flex; align-items: center; gap: 29px; }
+    .cat-verdict { font-size: 11px; color: var(--ink3); font-style: italic; font-family: var(--mono); font-weight: 500; text-align: right; min-width: 180px; }
+    .cat-score { font-family: var(--serif); font-size: 24px; font-weight: 300; min-width: 24px; text-align: right; line-height: 1; }
+    .score-good { color: var(--good); } .score-warn { color: var(--warn); } .score-bad { color: var(--bad); }
+
+    /* 4px progress bar — edge to edge */
+    .mini-bar { height: 4px; background: var(--paper3); position: relative; width: 100%; margin-top: 7px; }
+    .mini-fill { position: absolute; left: 0; top: 0; height: 100%; transition: width .6s cubic-bezier(.4,0,.2,1); }
+
+    /* "See more details" toggle row */
+    .cat-toggle-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; padding: 6px 14px 8px; }
+    .cat-toggle-label { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--ink2); }
+    .cat-toggle-chevron { font-size: 12px; color: var(--ink2); display: inline-block; transition: transform .2s; line-height: 1; }
+    .cat-row.open .cat-toggle-chevron { transform: rotate(-90deg); }
+
+    /* ── AUDIT/CARD EXPANDED ── */
+    /* All content has padding — nothing touches edges */
+    .cat-detail { display: none; padding: 0 15px 15px 15px; }
+    .cat-row.open .cat-detail { display: block; }
+
+    /* thin dividers wrap commentary */
+    .cat-commentary-wrap { border-top: 1px solid var(--paper3); border-bottom: 1px solid var(--paper3); padding: 14px 0 19px; margin-bottom: 18px; }
+    .cat-commentary { font-family: var(--mono); font-size: 10px; color: var(--ink); line-height: 1.8; }
+
+    /* ── AUDIT/CHECK BOXES ── */
+    .callouts { display: flex; flex-direction: column; gap: 18px; }
+
+    /* each callout row */
+    .callout { background: var(--paper); display: flex; align-items: stretch; position: relative; transition: opacity .2s; }
+    .callout.done { opacity: .45; }
+    .callout-bar { width: 4px; flex-shrink: 0; background: var(--bad); }
+    .callout.fix .callout-bar { background: var(--warn); }
+    .callout.note .callout-bar { background: var(--ink3); }
+    .callout.done .callout-bar { background: var(--ink3); }
+    .callout-inner { flex: 1; padding: 8px 40px 8px 20px; display: flex; flex-direction: column; gap: 6px; min-height: 77px; justify-content: center; }
+    .callout-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); font-family: var(--mono); font-weight: 500; }
+    .callout-text { font-family: var(--mono); font-size: 11px; color: var(--ink); line-height: 1.65; }
+
+    /* checkbox — top right, 16×16, clickable */
+    .callout-check {
+      position: absolute; right: 8px; top: 8px;
+      width: 16px; height: 16px;
+      border: 1px solid var(--ink2); border-radius: 2px;
+      cursor: pointer; flex-shrink: 0;
+      background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, border-color .15s;
+    }
+    .callout-check:hover { border-color: var(--ink); }
+    .callout.done .callout-check {
+      background: var(--ink2); border-color: var(--ink2);
+    }
+    .callout-check-tick {
+      display: none; width: 10px; height: 10px;
+      color: var(--paper);
+    }
+    .callout.done .callout-check-tick { display: block; }
+
+    .callout code { font-family: var(--mono); background: var(--paper3); padding: 1px 5px; border-radius: 2px; font-size: 10px; color: var(--accent); }
+
+    /* "See less details" inside expanded card — bottom right */
+    .cat-less-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 14px; }
+    .cat-less-label { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--ink2); }
+    .cat-less-chevron { font-size: 12px; color: var(--ink2); display: inline-block; transform: rotate(-90deg); line-height: 1; }
+
+    .all-callouts-wrap { display: flex; flex-direction: column; gap: 18px; padding: 12px 0; }
+    .callout-group-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); margin-bottom: 7px; padding-left: 2px; }
+
+
+    .result-actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 24px; border-top: 1px solid var(--paper3); margin-top: 24px; }
+    .act-btn { font-family: var(--mono); font-size: 11px; font-weight: 400; letter-spacing: .05em; padding: 9px 14px; border-radius: 2px; cursor: pointer; border: 1.5px solid var(--paper3); background: transparent; color: var(--ink2); transition: border-color .15s, color .15s; }
+    .act-btn:hover { border-color: var(--ink2); color: var(--ink); }
+    .act-btn.primary { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+    .act-btn.primary:hover { background: var(--paper); color: var(--accent); }
+    .share-input { flex: 1; font-family: var(--mono); font-size: 11px; padding: 9px 10px; border: 1px solid var(--paper3); border-radius: 2px; background: var(--paper2); color: var(--ink3); min-width: 160px; }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+    .fade-in { opacity:0; animation: fadeUp .4s ease forwards; }
+
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      .hero { padding: 48px 20px 36px; }
+      .steps, .rubric-grid { grid-template-columns: 1fr; }
+      .hiw { padding: 0 20px 48px; }
+      .section-divider { margin: 40px 20px; }
+      .results-wrap { padding: 24px 20px 48px; }
+      .overall { grid-template-columns: 1fr; gap: 12px; }
+      footer { padding: 20px; flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ LANDING ═══════════════════ -->
+<div class="page active" id="page-landing">
+  <nav>
+    <div class="wordmark" onclick="goHome()">UX<em>Lens</em></div>
+    <div class="nav-right">
+      <span class="nav-badge">Free · No signup</span>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-eyebrow">Powered by Claude AI</div>
+    <h1 class="hero-title">Instant UX critique.</h1>
+    <p class="hero-sub">Drop a screenshot or paste a URL. Get a structured audit across six UX dimensions — with specific, developer-ready callouts.</p>
+
+    <div class="input-card" id="input-card">
+
+      <!-- URL input — 427px wide, dark border, 32px tall -->
+      <input class="url-input" id="url-input" type="text" placeholder="https://yourproduct.com" oninput="currentUrl=this.value.trim()"/>
+
+      <!-- "or" divider -->
+      <div style="text-align:center;font-family:var(--mono);font-size:14px;font-weight:500;color:var(--ink);margin:20px 0;">or</div>
+
+      <!-- Drop zone — 157px tall, paper2 bg, solid paper3 border -->
+      <div class="upload-zone" id="upload-zone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
+        <input type="file" accept="image/png,image/jpeg,image/webp" onchange="onFileSelect(this)" id="file-input"/>
+
+        <!-- Empty state -->
+        <div id="upload-empty" style="display:flex;flex-direction:column;align-items:center;pointer-events:none;">
+          <svg width="22" height="21" viewBox="0 0 22 21" fill="none" style="margin-bottom:10px;" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 14V2m0 0L6 7m5-5 5 5M2 19h18" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--ink);line-height:1.5;">Drag and drop files here</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--ink);line-height:1.5;margin-bottom:12px;">or</div>
+          <button onclick="document.getElementById('file-input').click();event.stopPropagation();"
+            style="font-family:var(--mono);font-size:12px;padding:0 14px;height:32px;border:1px solid var(--accent);border-radius:2px;background:transparent;color:var(--ink);cursor:pointer;position:relative;z-index:1;pointer-events:all;">
+            Upload screenshot
+          </button>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--ink);margin-top:10px;">PNG, JPG, WebP</div>
+        </div>
+
+        <!-- Confirmed state — shown after file selected -->
+        <div id="upload-confirmed" style="display:none;flex-direction:column;align-items:center;gap:10px;pointer-events:none;">
+          <!-- Checkmark -->
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="10" r="9" stroke="var(--good)" stroke-width="1.5"/>
+            <path d="M6 10l3 3 5-5" stroke="var(--good)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <!-- Thumbnail -->
+          <img id="preview-thumb" src="" alt="" style="width:48px;height:36px;object-fit:cover;border-radius:2px;border:1px solid var(--paper3);"/>
+          <!-- Filename -->
+          <div style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;" id="preview-name"></div>
+          <!-- Remove link -->
+          <button onclick="clearFile(event)" style="font-family:var(--mono);font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;pointer-events:all;padding:0;transition:color .15s;"
+            onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--ink3)'">
+            Remove file
+          </button>
+        </div>
+      </div>
+
+      <!-- 12px gap then Anthropic key block — inline per Figma -->
+      <div style="height:12px;"></div>
+      <div class="api-key-block" id="api-notice">
+        <div class="api-key-label">Input your Anthropic API key</div>
+        <div class="api-key-row">
+          <input class="api-key-input" id="api-key-input" type="password" placeholder="sk-ant-…" oninput="currentApiKey=this.value.trim()"/>
+          <button class="api-key-save" onclick="saveApiKey()">Save key</button>
+        </div>
+        <div class="api-key-saved" id="api-key-saved">✓ Key saved for this session</div>
+      </div>
+
+      <!-- 12px gap then full-width primary button -->
+      <div style="height:12px;"></div>
+      <button class="run-btn" id="run-btn" onclick="startAudit()">
+        RUN NEW AUDIT
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0-4-4m4 4-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <div class="chips">
+      <span class="chip-label">Try:</span>
+      <div class="chip" onclick="fillUrl('https://linear.app')">linear.app</div>
+      <div class="chip" onclick="fillUrl('https://notion.so')">notion.so</div>
+      <div class="chip" onclick="fillUrl('https://vercel.com')">vercel.com</div>
+      <div class="chip" onclick="fillUrl('https://cal.com')">cal.com</div>
+    </div>
+  </section>
+
+  <hr class="section-divider"/>
+
+  <section class="hiw">
+    <div class="section-label">How it works</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-heading">
+          <div class="step-num">01</div>
+          <div class="step-title">Give it a target</div>
+        </div>
+        <div class="step-body">Paste a URL or drop in a screenshot. Let the system see exactly what users see.</div>
+      </div>
+      <div class="step">
+        <div class="step-heading">
+          <div class="step-num">02</div>
+          <div class="step-title">AI runs the audit</div>
+        </div>
+        <div class="step-body">The system analyzes the interface across six UX dimensions. Each category is scored 1–10 with a blurb on how to fix the errors.</div>
+      </div>
+      <div class="step">
+        <div class="step-heading">
+          <div class="step-num">03</div>
+          <div class="step-title">Get specific fixes</div>
+        </div>
+        <div class="step-body">Every issue includes developer-ready and design-ready callouts: contrast ratios, WCAG references, exact CSS fixes. Not vague advice.</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider" style="margin-top:0"/>
+
+  <section class="hiw">
+    <div class="section-label">The rubric</div>
+
+    <!-- Expandable dimension deep-dives -->
+    <div class="dimensions">
+
+      <div class="dim-row" onclick="toggleDim(this)">
+        <div class="dim-header">
+          <div class="dim-header-left">
+            <div class="dim-dot" style="background:var(--accent)"></div>
+            <div class="dim-name">Clarity</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="dim-tagline">Can I tell what this is?</div>
+            <div class="dim-chevron">›</div>
+          </div>
+        </div>
+        <div class="dim-body">The very first question a new user asks. Before anything else works, the purpose has to be legible. It covers headline copy, hero layout, value proposition, CTA labeling. If this fails, nothing else matters.</div>
+      </div>
+
+      <div class="dim-row" onclick="toggleDim(this)">
+        <div class="dim-header">
+          <div class="dim-header-left">
+            <div class="dim-dot" style="background:var(--ink2)"></div>
+            <div class="dim-name">Visual hierarchy</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="dim-tagline">Where do I look?</div>
+            <div class="dim-chevron">›</div>
+          </div>
+        </div>
+        <div class="dim-body">Once the user understands the purpose, their eye needs guidance. This covers type scale, contrast, layout flow, and visual weight. It's the difference between a page that reads naturally and one where everything competes equally.</div>
+      </div>
+
+      <div class="dim-row" onclick="toggleDim(this)">
+        <div class="dim-header">
+          <div class="dim-header-left">
+            <div class="dim-dot" style="background:var(--accent2)"></div>
+            <div class="dim-name">Trust signals</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="dim-tagline">Should I believe this?</div>
+            <div class="dim-chevron">›</div>
+          </div>
+        </div>
+        <div class="dim-body">This is where the user's skepticism kicks in. Social proof, testimonials, press mentions, pricing transparency, security badges — anything that answers "why should I trust you?" It matters most on landing pages and checkout flows.</div>
+      </div>
+
+      <div class="dim-row" onclick="toggleDim(this)">
+        <div class="dim-header">
+          <div class="dim-header-left">
+            <div class="dim-dot" style="background:var(--good)"></div>
+            <div class="dim-name">Transparency</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="dim-tagline">Do I understand what's happening?</div>
+            <div class="dim-chevron">›</div>
+          </div>
+        </div>
+        <div class="dim-body">Distinct from trust — this is about system clarity rather than credibility. Does the user know what the product does with their data? Does AI-powered functionality explain itself? Is pricing honestly framed? This category has become especially important as AI features become common in products.</div>
+      </div>
+
+      <div class="dim-row" onclick="toggleDim(this)">
+        <div class="dim-header">
+          <div class="dim-header-left">
+            <div class="dim-dot" style="background:#4f8ab8"></div>
+            <div class="dim-name">Accessibility</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="dim-tagline">Can everyone use this?</div>
+            <div class="dim-chevron">›</div>
+          </div>
+        </div>
+        <div class="dim-body">The technical layer. Contrast ratios, touch target sizes, keyboard navigation, screen reader compatibility, WCAG AA compliance. Unlike the others, this one has objective pass/fail criteria — which is why the callouts here are the most specific.</div>
+      </div>
+
+      <div class="dim-row" onclick="toggleDim(this)">
+        <div class="dim-header">
+          <div class="dim-header-left">
+            <div class="dim-dot" style="background:#7a5ca8"></div>
+            <div class="dim-name">Feedback loops</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="dim-tagline">Does the UI talk back to me?</div>
+            <div class="dim-chevron">›</div>
+          </div>
+        </div>
+        <div class="dim-body">The final layer — how well does the interface communicate state? Loading, empty, error, and success states. A product can pass every other category and still feel broken if it goes silent during async operations or fails to explain what went wrong.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-word">UX<em>Lens</em> — made for designers, by a designer.</div>
+    <div class="footer-note">Powered by Claude · Free to use</div>
+  </footer>
+</div>
+
+<!-- ═══════════════════ LOADING ═══════════════════ -->
+<div class="page" id="page-loading">
+  <nav><div class="wordmark" onclick="goHome()">UX<em>Lens</em></div></nav>
+  <div class="loading-page">
+    <div class="loading-title">Analysing interface…</div>
+    <div class="loading-subject" id="loading-subject"></div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="loading-steps">
+      <div class="loading-step" id="lstep-0"><div class="lstep-dot"></div><span>Capturing interface</span></div>
+      <div class="loading-step" id="lstep-1"><div class="lstep-dot"></div><span>Running UX rubric</span></div>
+      <div class="loading-step" id="lstep-2"><div class="lstep-dot"></div><span>Scoring six dimensions</span></div>
+      <div class="loading-step" id="lstep-3"><div class="lstep-dot"></div><span>Generating dev callouts</span></div>
+      <div class="loading-step" id="lstep-4"><div class="lstep-dot"></div><span>Compiling report</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ERROR ═══════════════════ -->
+<div class="page" id="page-error">
+  <nav><div class="wordmark" onclick="goHome()">UX<em>Lens</em></div></nav>
+  <div class="error-page">
+    <div style="margin-bottom:22px;">
+      <div class="audit-source" id="error-source" style="margin-bottom:16px;"></div>
+      <div style="font-family:var(--serif);font-size:24px;font-style:italic;color:var(--accent);margin-bottom:16px;" id="error-title">Page couldn't be captured.</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--ink);line-height:1.7;" id="error-body"></div>
+    </div>
+    <!-- Upload zone reused from landing -->
+    <div style="max-width:427px;">
+      <div style="margin-bottom:12px;">
+        <input class="url-input" id="error-url-input" type="text" placeholder="https://yourproduct.com" style="margin-bottom:0;"/>
+      </div>
+      <div style="text-align:center;font-family:var(--mono);font-size:14px;font-weight:500;color:var(--ink);margin:12px 0;">or</div>
+      <div class="upload-zone" style="margin-bottom:16px;" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)">
+        <input type="file" accept="image/png,image/jpeg,image/webp" onchange="onFileSelect(this)" id="error-file-input"/>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--ink3);text-align:center;padding:8px 0;">
+          <strong style="color:var(--ink2);">Drag and drop files here</strong> or<br>
+          <span style="font-size:10px;margin-top:8px;display:block;">PNG, JPG, WebP</span>
+        </div>
+      </div>
+      <button class="btn-run" style="width:100%;height:32px;" onclick="goHome()">Run new audit →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ RESULTS ═══════════════════ -->
+<div class="page" id="page-results">
+  <nav>
+    <div class="wordmark" onclick="goHome()">UX<em>Lens</em></div>
+  </nav>
+  <div class="results-wrap">
+
+    <!-- 1. Audit source label -->
+    <div class="audit-source" id="results-subject" style="margin-bottom:16px;"></div>
+
+    <!-- 2. Action buttons row -->
+    <div class="results-actions-row" style="margin-bottom:28px;">
+      <button class="btn-download" onclick="alert('Download coming soon')">
+        Download card
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="btn-run" onclick="goHome()">Run new audit</button>
+    </div>
+
+    <!-- 3. Score + label side by side -->
+    <div class="overall" style="margin-bottom:19px;">
+      <div class="overall-left">
+        <div class="results-eyebrow">Audit report</div>
+        <div>
+          <div class="overall-label" id="overall-label">—</div>
+          <div class="overall-summary" id="overall-summary"></div>
+        </div>
+      </div>
+      <div class="big-score" id="big-score">—<sub>/10</sub></div>
+    </div>
+
+    <!-- 4. Overall rating bar — sits directly below score block -->
+    <div class="scorebar" id="scorebar" style="margin-bottom:55px;"></div>
+
+    <!-- 5. Tabs -->
+    <div class="view-tabs">
+      <div class="tab active" id="tab-design-btn" onclick="switchTab('rubric',this)">Design notes <span id="tab-design-count"></span></div>
+      <div class="tab" id="tab-dev-btn" onclick="switchTab('devnotes',this)">Dev notes <span id="tab-dev-count"></span></div>
+    </div>
+
+    <!-- Design notes tab -->
+    <div class="tab-panel active" id="tab-rubric">
+      <div class="cards-section-label">Active</div>
+      <div id="cat-list" class="cat-list"></div>
+      <div class="resolved-section" id="resolved-section" style="display:none;">
+        <div class="resolved-label">Resolved</div>
+        <div class="resolved-cards" id="resolved-list"></div>
+      </div>
+    </div>
+
+    <!-- Dev notes tab — same card layout as design tab -->
+    <div class="tab-panel" id="tab-devnotes">
+      <div class="cards-section-label">Active</div>
+      <div id="dev-cat-list" class="cat-list"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+  // ── STATE ──
+  let currentFile = null;
+  let currentUrl = '';
+  let currentApiKey = localStorage.getItem('uxlens_apikey') || '';
+
+  // Restore saved key
+  if (currentApiKey) {
+    document.getElementById('api-key-input').value = currentApiKey;
+    document.getElementById('api-key-saved').classList.add('visible');
+  }
+
+  function saveApiKey() {
+    currentApiKey = document.getElementById('api-key-input').value.trim();
+    if (currentApiKey) {
+      localStorage.setItem('uxlens_apikey', currentApiKey);
+      document.getElementById('api-key-saved').classList.add('visible');
+    }
+  }
+
+  function toggleDim(row) {
+    row.classList.toggle('open');
+  }
+
+  // ── NAVIGATION ──
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function goHome() {
+    showPage('landing');
+  }
+
+  // ── INPUT ──
+  function fillUrl(url) {
+    document.getElementById('url-input').value = url;
+    currentUrl = url;
+  }
+
+  function onFileSelect(input) {
+    if (!input.files || !input.files[0]) return;
+    currentFile = input.files[0];
+    const url = URL.createObjectURL(currentFile);
+    document.getElementById('preview-thumb').src = url;
+    document.getElementById('preview-name').textContent = currentFile.name;
+    document.getElementById('upload-empty').style.display = 'none';
+    document.getElementById('upload-confirmed').style.display = 'flex';
+    // Also update URL input placeholder to signal screenshot takes priority
+    document.getElementById('url-input').placeholder = 'Screenshot selected — or paste a URL to override';
+  }
+
+  function clearFile(e) {
+    e.stopPropagation();
+    currentFile = null;
+    document.getElementById('file-input').value = '';
+    document.getElementById('upload-confirmed').style.display = 'none';
+    document.getElementById('upload-empty').style.display = 'flex';
+    document.getElementById('url-input').placeholder = 'https://yourproduct.com';
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      const fi = document.getElementById('file-input');
+      fi.files = dt.files;
+      onFileSelect(fi);
+    }
+  }
+
+  function switchTab(id, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+  }
+
+  function copyLink() {
+    const el = document.getElementById('share-input');
+    el.select();
+    try { navigator.clipboard.writeText(el.value); } catch(e) { document.execCommand('copy'); }
+    const btn = event.target;
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = '⎘ Copy link', 1600);
+  }
+
+  // ── LOADING ANIMATION ──
+  function startLoadingAnim() {
+    for (let i = 0; i < 5; i++) {
+      const s = document.getElementById('lstep-' + i);
+      s.classList.remove('active', 'done');
+    }
+    document.getElementById('progress-fill').style.width = '0%';
+
+    const delays =   [0,    900,  2000, 3200, 4600];
+    const progress = [10,   28,   52,   74,   88];
+
+    delays.forEach((d, i) => {
+      setTimeout(() => {
+        if (i > 0) {
+          document.getElementById('lstep-' + (i-1)).classList.remove('active');
+          document.getElementById('lstep-' + (i-1)).classList.add('done');
+        }
+        document.getElementById('lstep-' + i).classList.add('active');
+        document.getElementById('progress-fill').style.width = progress[i] + '%';
+      }, d);
+    });
+  }
+
+  function finishLoadingAnim() {
+    for (let i = 0; i < 5; i++) {
+      const s = document.getElementById('lstep-' + i);
+      s.classList.remove('active');
+      s.classList.add('done');
+    }
+    document.getElementById('progress-fill').style.width = '100%';
+  }
+
+  // ── AUDIT ──
+  async function startAudit() {
+    if (!currentUrl && !currentFile) {
+      const card = document.getElementById('input-card');
+      card.style.animation = 'none';
+      card.offsetHeight;
+      card.style.animation = '';
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 400);
+      document.getElementById('url-input').focus();
+      return;
+    }
+
+    if (!currentApiKey) {
+      document.getElementById('api-key-input').focus();
+      document.getElementById('api-key-input').style.borderColor = 'var(--accent)';
+      setTimeout(() => document.getElementById('api-key-input').style.borderColor = '', 1200);
+      return;
+    }
+
+    const subject = currentFile ? currentFile.name : currentUrl;
+    document.getElementById('loading-subject').textContent = subject;
+    showPage('loading');
+    startLoadingAnim();
+
+    try {
+      let imageData = null;
+      let mediaType = 'image/png';
+
+      if (currentFile) {
+        imageData = await fileToBase64(currentFile);
+        mediaType = currentFile.type || 'image/png';
+      }
+
+      const messages = buildMessages(currentUrl, imageData, mediaType);
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': currentApiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || 'API returned ' + response.status);
+      }
+
+      const data = await response.json();
+      const raw = data.content.map(b => b.text || '').join('');
+      const clean = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+
+      let audit;
+      try {
+        audit = JSON.parse(clean);
+      } catch(e) {
+        const match = clean.match(/\{[\s\S]*\}/);
+        if (match) audit = JSON.parse(match[0]);
+        else throw new Error('Could not parse audit response. Try again.');
+      }
+
+      finishLoadingAnim();
+      setTimeout(() => renderResults(audit, subject), 600);
+
+    } catch(err) {
+      let msg = err.message;
+      if (msg.includes('401')) msg = 'Invalid API key. Check your key at console.anthropic.com and try again.';
+      else if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) msg = 'This page returned a login or paywall. It requires authentication before scanning. Please try a different URL or upload a screenshot instead.';
+      const srcLabel = currentFile ? currentFile.name : currentUrl;
+      const srcEl = document.getElementById('error-source');
+      if (srcEl) srcEl.textContent = (currentFile ? 'Screenshot: ' : 'URL: ') + srcLabel;
+      document.getElementById('error-title').textContent = msg.includes('authentication') ? "Page couldn't be captured." : 'Audit failed.';
+      document.getElementById('error-body').textContent = msg;
+      showPage('error');
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = () => rej(new Error('Failed to read image file'));
+      r.readAsDataURL(file);
+    });
+  }
+
+  function buildMessages(url, imageData, mediaType) {
+    const target = imageData
+      ? 'the UI screenshot attached'
+      : `the product UI at this URL: ${url}`;
+
+    const prompt = `You are a senior UX auditor and front-end accessibility expert. Analyse ${target}.
+
+Return ONLY valid JSON — no explanation, no markdown fences, no preamble.
+
+Score across these six categories (integers 1–10):
+- clarity: Is the purpose immediately legible to a new visitor?
+- hierarchy: Does visual weight and layout guide the eye to the right things?
+- trust: Are trust signals present, credible, and well-placed?
+- transparency: Does the user always understand what the product is doing and why?
+- accessibility: Contrast ratios, touch targets, focus states, WCAG AA compliance
+- feedback: Are loading, error, empty, and success states handled clearly?
+
+For each category provide:
+- score: integer 1–10
+- verdict: max 7 words, specific, present tense
+- commentary: 2–3 sentences, concrete design observations
+- callouts: array of 1–3 design-focused items (for designers), each with:
+  - type: "issue" | "fix" | "note"
+  - label: 3–5 word title
+  - text: design recommendation. Focus on layout, hierarchy, spacing, trust patterns, UX copy.
+- devCallouts: array of 1–3 code-specific items (for developers), each with:
+  - type: "issue" | "fix" | "note"
+  - label: 3–5 word title
+  - text: precise technical fix. Always include: exact CSS property names and values, hex color codes with contrast ratios (e.g. "#6366F1 on #FFF = 3.0:1, needs 4.5:1"), WCAG criterion numbers (e.g. WCAG 1.4.3), pixel or rem measurements, HTML attribute names (e.g. aria-label, role, tabindex). Write as if speaking directly to a developer who will action the fix in code.
+
+Also provide:
+- overallScore: one decimal average
+- overallLabel: "Excellent" | "Good" | "Needs attention" | "Significant issues"
+- overallSummary: 2 sentences — biggest strength, biggest gap
+
+Respond with exactly this JSON shape and nothing else:
+{
+  "overallScore": 6.8,
+  "overallLabel": "Needs attention",
+  "overallSummary": "...",
+  "categories": [
+    {
+      "id": "clarity",
+      "name": "Clarity",
+      "score": 8,
+      "verdict": "Purpose is immediately legible",
+      "commentary": "...",
+      "callouts": [
+        { "type": "issue", "label": "Icon-only nav", "text": "Design recommendation..." }
+      ],
+      "devCallouts": [
+        { "type": "issue", "label": "Missing aria-label", "text": "Add aria-label=\"Navigation\" to the <nav> element. Four icon-only buttons lack accessible names — add aria-label to each. WCAG 2.4.6." }
+      ]
+    }
+  ]
+}`;
+
+    if (imageData) {
+      return [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageData } },
+          { type: 'text', text: prompt }
+        ]
+      }];
+    }
+    return [{ role: 'user', content: prompt }];
+  }
+
+  // ── RENDER RESULTS ──
+  function renderResults(audit, subject) {
+    document.getElementById('results-subject').textContent = subject;
+
+    const score = parseFloat(audit.overallScore) || 0;
+    document.getElementById('big-score').innerHTML = score.toFixed(1) + '<sub>/10</sub>';
+    document.getElementById('overall-label').textContent = audit.overallLabel || '';
+    document.getElementById('overall-summary').textContent = audit.overallSummary || '';
+
+    // Tab counts
+    const cats = audit.categories || [];
+    const totalDevCallouts = cats.reduce((a, c) => a + (c.devCallouts || []).length, 0);
+    document.getElementById('tab-design-count').textContent = '(' + cats.length + ')';
+    document.getElementById('tab-dev-count').textContent = '(' + totalDevCallouts + ')';
+
+    // Reset resolved section
+    document.getElementById('resolved-section').style.display = 'none';
+    document.getElementById('resolved-list').innerHTML = '';
+
+    const scoreClass = score >= 7 ? 'good' : score >= 5 ? 'warn' : 'bad';
+    const sb = document.getElementById('scorebar');
+    sb.innerHTML = '';
+    for (let i = 1; i <= 10; i++) {
+      const seg = document.createElement('div');
+      seg.className = 'sb-seg' + (i <= Math.round(score) ? ' ' + scoreClass : '');
+      sb.appendChild(seg);
+    }
+
+    const list = document.getElementById('cat-list');
+    list.innerHTML = '';
+    const devList = document.getElementById('dev-cat-list');
+    devList.innerHTML = '';
+
+    // Helper: build a card row
+    const buildRow = (cat, idx, withCheckboxes) => {
+      const sc = parseInt(cat.score) || 0;
+      const scClass = sc >= 7 ? 'score-good' : sc >= 5 ? 'score-warn' : 'score-bad';
+      const fillColor = sc >= 7 ? 'var(--good)' : sc >= 5 ? 'var(--warn)' : 'var(--bad)';
+
+      const row = document.createElement('div');
+      row.className = 'cat-row';
+      row.style.opacity = '0';
+      row.style.animation = `fadeUp .4s ${idx * .07}s ease forwards`;
+
+      row.innerHTML = `
+        <div class="cat-collapsed">
+          <div class="cat-header">
+            <div class="cat-name">${cat.name}</div>
+            <div class="cat-right">
+              <div class="cat-verdict">${cat.verdict || ''}</div>
+              <div class="cat-score ${scClass}">${sc}</div>
+            </div>
+          </div>
+        </div>
+        <div class="mini-bar">
+          <div class="mini-fill" style="width:0%;background:${fillColor}" data-pct="${sc * 10}"></div>
+        </div>
+        <div class="cat-toggle-row">
+          <span class="cat-toggle-label">See more details</span>
+          <span class="cat-toggle-chevron">›</span>
+        </div>
+        <div class="cat-detail">
+          <div class="cat-commentary-wrap">
+            <div class="cat-commentary">${cat.commentary || ''}</div>
+          </div>
+          <div class="callouts" data-callout-list></div>
+        </div>`;
+
+      // Toggle open/close — update label and chevron to reflect state
+      const toggle = (e) => {
+        e.stopPropagation();
+        const isOpen = row.classList.contains('open');
+        document.querySelectorAll('.cat-row.open').forEach(r => {
+          r.classList.remove('open');
+          r.querySelector('.cat-toggle-label').textContent = 'See more details';
+          r.querySelector('.cat-toggle-chevron').textContent = '›';
+        });
+        if (!isOpen) {
+          row.classList.add('open');
+          row.querySelector('.cat-toggle-label').textContent = 'See less details';
+          row.querySelector('.cat-toggle-chevron').textContent = '^';
+        }
+      };
+      row.querySelector('.cat-collapsed').addEventListener('click', toggle);
+      row.querySelector('.cat-toggle-row').addEventListener('click', toggle);
+
+      // Build callouts
+      const calloutList = row.querySelector('[data-callout-list]');
+      (cat.callouts || []).forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'callout ' + (c.type === 'fix' ? 'fix' : c.type === 'note' ? 'note' : '');
+        el.innerHTML = `
+          <div class="callout-bar"></div>
+          <div class="callout-inner">
+            <div class="callout-label">${c.label || ''}</div>
+            <div class="callout-text">${(c.text || '').replace(/`([^`]+)`/g, '<code>$1</code>')}</div>
+          </div>
+          ${withCheckboxes ? `<div class="callout-check" title="Mark as done">
+            <svg class="callout-check-tick" viewBox="0 0 10 10" fill="none">
+              <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>` : ''}`;
+
+        if (withCheckboxes) {
+          el.querySelector('.callout-check').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isDone = el.classList.toggle('done');
+
+            setTimeout(() => {
+              if (isDone) {
+                // Move to bottom of list
+                calloutList.appendChild(el);
+
+                // Check if ALL callouts now done → move card to Resolved
+                const allDone = [...calloutList.querySelectorAll('.callout')].every(c => c.classList.contains('done'));
+                if (allDone) {
+                  row.classList.remove('open');
+                  setTimeout(() => {
+                    const resolvedList = document.getElementById('resolved-list');
+                    const resolvedSection = document.getElementById('resolved-section');
+                    row.classList.add('resolved');
+                    resolvedList.appendChild(row);
+                    resolvedSection.style.display = 'block';
+                  }, 300);
+                }
+              } else {
+                // Unchecked — if card is in Resolved, move it back to Active
+                if (row.classList.contains('resolved')) {
+                  row.classList.remove('resolved');
+                  list.appendChild(row);
+                  // Hide resolved section if now empty
+                  const resolvedList = document.getElementById('resolved-list');
+                  const resolvedSection = document.getElementById('resolved-section');
+                  if (resolvedList.children.length === 0) resolvedSection.style.display = 'none';
+                }
+                // Move unchecked item back to top of callout list
+                const firstUnchecked = [...calloutList.querySelectorAll('.callout')].find(c => !c.classList.contains('done'));
+                if (firstUnchecked) calloutList.insertBefore(el, firstUnchecked);
+                else calloutList.insertBefore(el, calloutList.firstChild);
+              }
+            }, 150);
+          });
+        }
+
+        calloutList.appendChild(el);
+      });
+
+      return row;
+    };
+
+    (audit.categories || []).forEach((cat, idx) => {
+      // Design tab — design callouts, with checkboxes
+      const designCat = Object.assign({}, cat, { callouts: cat.callouts || [] });
+      list.appendChild(buildRow(designCat, idx, true));
+      // Dev tab — devCallouts only, no checkboxes
+      const devCat = Object.assign({}, cat, { callouts: cat.devCallouts || [] });
+      devList.appendChild(buildRow(devCat, idx, false));
+    });
+
+    showPage('results');
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.querySelectorAll('.mini-fill').forEach(el => {
+          el.style.width = el.dataset.pct + '%';
+        });
+      }, 400);
+      setTimeout(() => {
+        const first = list.querySelector('.cat-row');
+        if (first) first.click();
+      }, 700);
+    });
+  }
+</script>
+</body>
+</html>
