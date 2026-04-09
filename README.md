@@ -23,7 +23,7 @@ Each analysis covers six categories:
 | **Accessibility** | WCAG compliance, contrast ratios, keyboard/screen reader considerations |
 | **Feedback Loops** | Does the UI respond to user actions in meaningful ways? |
 
-> **Why both Trust Signals and Transparency?** These are often collapsed into one — but they're distinct. Trust is about perception (does this *feel* safe?). Transparency is about honesty (does this *tell the truth*?). A dark pattern can score high on trust and zero on transparency. UXLens keeps them separate on purpose.
+> **Why both Trust Signals and Transparency?** These are often collapsed into one when, in actuality, they're pretty distinct. Trust is about perception (does this *feel* safe?), whereas transparency is about honesty (does this *tell the truth*?). A dark pattern can score high on trust, but zero on transparency. UXLens keeps them separate on purpose.
 
 Each category returns two layers of callouts:
 - **Designer callouts** — Framing, layout, copy, and UX pattern recommendations
