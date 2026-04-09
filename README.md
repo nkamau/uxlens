@@ -6,6 +6,8 @@ UXLens is a single-file web app that runs structured UX audits using Claude API.
 
 I built this as a portfolio project to explore the intersection of UX methodology and AI tooling.
 
+
+
 ---
 
 ## What it audits
@@ -24,8 +26,8 @@ Each analysis covers six categories:
 > **Why both Trust Signals and Transparency?** These are often collapsed into one — but they're distinct. Trust is about perception (does this *feel* safe?). Transparency is about honesty (does this *tell the truth*?). A dark pattern can score high on trust and zero on transparency. UXLens keeps them separate on purpose.
 
 Each category returns two layers of callouts:
-- **Designer callouts** — framing, layout, copy, and UX pattern recommendations
-- **Developer callouts** — concrete fixes with CSS properties, hex codes, contrast ratios, and WCAG references
+- **Designer callouts** — Framing, layout, copy, and UX pattern recommendations
+- **Developer callouts** — Concrete fixes with CSS properties, hex codes, contrast ratios, and WCAG references
 
 ---
 
@@ -47,26 +49,6 @@ UXLens uses a bring-your-own-key model. You'll need a Claude API key from Anthro
 - **Fraunces** (headings) + **DM Mono** (UI) as the type system
 - CSS custom property design system: `--paper`, `--ink`, `--accent`, `--good`, `--warn`, `--bad`
 
----
-
-## Run it locally
-
-```bash
-# Clone the repo
-git clone https://github.com/YOUR_USERNAME/uxlens.git
-cd uxlens
-
-# Open in browser — that's it
-open index.html
-```
-
-No install. No `npm install`. Just open the file.
-
----
-
-## Deploy it
-
-The easiest path is [Vercel](https://vercel.com) — drag the repo folder into the Vercel dashboard and it deploys instantly. Since the API key is entered by the user at runtime, there's no server-side secret management needed for the BYOK version.
 
 ---
 
