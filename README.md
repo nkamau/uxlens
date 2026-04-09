@@ -6,6 +6,7 @@ UXLens is a single-file web app that runs structured UX audits using Claude API.
 
 I built this as a portfolio project to explore the intersection of UX methodology and AI tooling.
 
+🔗 **[Try it live →](https://nkamau.github.io/uxlens)**
 
 
 ---
