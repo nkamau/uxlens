@@ -36,7 +36,7 @@
     .nav-btn:hover { border-color: var(--ink2); color: var(--ink); }
 
     /* LANDING */
-    .hero { padding: 80px 40px 56px; max-width: 800px; margin: 0 auto; text-align: center; }
+    .hero { padding: 56px 40px 28px; max-width: 800px; margin: 0 auto; text-align: center; }
     .hero-eyebrow { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; opacity: 0; animation: fadeUp .5s .05s ease forwards; }
     .hero-title { font-family: var(--serif); font-size: clamp(38px, 6vw, 64px); font-weight: 300; line-height: 1.08; letter-spacing: -.03em; margin-bottom: 22px; opacity: 0; animation: fadeUp .5s .15s ease forwards; }
     .hero-title em { font-style: italic; color: var(--accent); }
@@ -135,14 +135,22 @@
     .loading-step.active .lstep-dot { background: var(--accent); animation: pulse 1s ease infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-    /* ERROR */
-    .error-page { max-width: 560px; margin: 60px auto; padding: 0 40px; }
-    .error-card { background: var(--paper2); border: 1px solid var(--paper3); border-left: 3px solid var(--bad); border-radius: 0 4px 4px 0; padding: 24px; }
-    .error-title { font-family: var(--serif); font-size: 20px; font-style: italic; color: var(--bad); margin-bottom: 10px; }
-    .error-body { font-size: 12px; color: var(--ink2); line-height: 1.75; }
-    .error-opts { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-    .err-btn { font-family: var(--mono); font-size: 11px; padding: 8px 14px; border: 1px solid var(--paper3); border-radius: 2px; background: var(--paper); color: var(--ink2); cursor: pointer; transition: all .15s; }
-    .err-btn:hover { border-color: var(--ink3); color: var(--ink); }
+    /* ── ERROR PAGE (URL capture failure) — matches Figma ── */
+    .error-page { max-width: 711px; margin: 0 auto; padding: 40px 40px 60px; }
+    .error-page-title { font-family: var(--serif); font-size: 24px; font-style: italic; color: var(--accent); margin-bottom: 16px; }
+    .error-page-body { font-family: var(--mono); font-size: 12px; color: var(--ink); line-height: 1.75; margin-bottom: 32px; }
+    .error-upload-wrap { width: 427px; }
+
+    /* ── INLINE ERROR MESSAGES (landing page) ── */
+    .inline-error { display: none; align-items: flex-start; gap: 8px; margin-top: 8px; padding: 10px 12px; background: rgba(184,48,32,.06); border: 1px solid rgba(184,48,32,.2); border-radius: 2px; font-family: var(--mono); font-size: 11px; color: var(--bad); line-height: 1.6; }
+    .inline-error.visible { display: flex; }
+    .inline-error-icon { flex-shrink: 0; margin-top: 1px; }
+    .inline-error a { color: var(--accent); text-decoration: underline; }
+
+    /* ── API KEY ERROR ── */
+    .api-key-error { display: none; font-family: var(--mono); font-size: 11px; color: var(--bad); margin-top: 6px; line-height: 1.5; }
+    .api-key-error.visible { display: block; }
+    .api-key-input.error { border-color: var(--bad) !important; }
     .err-btn.primary { border-color: var(--accent); color: var(--accent); }
 
     /* RESULTS */
@@ -356,6 +364,12 @@
         </div>
       </div>
 
+      <!-- File type error — shown below drop zone for rejected files -->
+      <div class="inline-error" id="file-type-error">
+        <span class="inline-error-icon">⚠</span>
+        <span id="file-type-error-msg">Only PNG, JPG, and WebP files are accepted. Please upload a different file.</span>
+      </div>
+
       <!-- 12px gap then Anthropic key block — inline per Figma -->
       <div style="height:12px;"></div>
       <div class="api-key-block" id="api-notice">
@@ -365,6 +379,7 @@
           <button class="api-key-save" onclick="saveApiKey()">Save key</button>
         </div>
         <div class="api-key-saved" id="api-key-saved">✓ Key saved for this session</div>
+        <div class="api-key-error" id="api-key-error"></div>
       </div>
 
       <!-- 12px gap then full-width primary button -->
@@ -375,47 +390,11 @@
       </button>
     </div>
 
-    <div class="chips">
-      <span class="chip-label">Try:</span>
-      <div class="chip" onclick="fillUrl('https://linear.app')">linear.app</div>
-      <div class="chip" onclick="fillUrl('https://notion.so')">notion.so</div>
-      <div class="chip" onclick="fillUrl('https://vercel.com')">vercel.com</div>
-      <div class="chip" onclick="fillUrl('https://cal.com')">cal.com</div>
-    </div>
   </section>
 
-  <hr class="section-divider"/>
+  <hr class="section-divider" style="margin:32px 40px 0;"/>
 
-  <section class="hiw">
-    <div class="section-label">How it works</div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-heading">
-          <div class="step-num">01</div>
-          <div class="step-title">Give it a target</div>
-        </div>
-        <div class="step-body">Paste a URL or drop in a screenshot. Let the system see exactly what users see.</div>
-      </div>
-      <div class="step">
-        <div class="step-heading">
-          <div class="step-num">02</div>
-          <div class="step-title">AI runs the audit</div>
-        </div>
-        <div class="step-body">The system analyzes the interface across six UX dimensions. Each category is scored 1–10 with a blurb on how to fix the errors.</div>
-      </div>
-      <div class="step">
-        <div class="step-heading">
-          <div class="step-num">03</div>
-          <div class="step-title">Get specific fixes</div>
-        </div>
-        <div class="step-body">Every issue includes developer-ready and design-ready callouts: contrast ratios, WCAG references, exact CSS fixes. Not vague advice.</div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="section-divider" style="margin-top:0"/>
-
-  <section class="hiw">
+  <section class="hiw" style="padding-bottom:32px;">
     <div class="section-label">The rubric</div>
 
     <!-- Expandable dimension deep-dives -->
@@ -508,6 +487,35 @@
     </div>
   </section>
 
+  <hr class="section-divider"/>
+
+  <section class="hiw">
+    <div class="section-label">How it works</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-heading">
+          <div class="step-num">01</div>
+          <div class="step-title">Give it a target</div>
+        </div>
+        <div class="step-body">Paste a URL or drop in a screenshot. Let the system see exactly what users see.</div>
+      </div>
+      <div class="step">
+        <div class="step-heading">
+          <div class="step-num">02</div>
+          <div class="step-title">AI runs the audit</div>
+        </div>
+        <div class="step-body">The system analyzes the interface across six UX dimensions. Each category is scored 1–10 with a blurb on how to fix the errors.</div>
+      </div>
+      <div class="step">
+        <div class="step-heading">
+          <div class="step-num">03</div>
+          <div class="step-title">Get specific fixes</div>
+        </div>
+        <div class="step-body">Every issue includes developer-ready and design-ready callouts: contrast ratios, WCAG references, exact CSS fixes. Not vague advice.</div>
+      </div>
+    </div>
+  </section>
+
   <footer>
     <div class="footer-word">UX<em>Lens</em> — made for designers, by a designer.</div>
     <div class="footer-note">Powered by Claude · Free to use</div>
@@ -535,26 +543,51 @@
 <div class="page" id="page-error">
   <nav><div class="wordmark" onclick="goHome()">UX<em>Lens</em></div></nav>
   <div class="error-page">
-    <div style="margin-bottom:22px;">
+
+    <!-- Source + title + explanation — matches Figma error screen -->
+    <div style="margin-bottom:28px;">
       <div class="audit-source" id="error-source" style="margin-bottom:16px;"></div>
-      <div style="font-family:var(--serif);font-size:24px;font-style:italic;color:var(--accent);margin-bottom:16px;" id="error-title">Page couldn't be captured.</div>
-      <div style="font-family:var(--mono);font-size:12px;color:var(--ink);line-height:1.7;" id="error-body"></div>
+      <div class="error-page-title" id="error-title">Page couldn't be captured.</div>
+      <div class="error-page-body" id="error-body"></div>
     </div>
-    <!-- Upload zone reused from landing -->
-    <div style="max-width:427px;">
-      <div style="margin-bottom:12px;">
-        <input class="url-input" id="error-url-input" type="text" placeholder="https://yourproduct.com" style="margin-bottom:0;"/>
-      </div>
-      <div style="text-align:center;font-family:var(--mono);font-size:14px;font-weight:500;color:var(--ink);margin:12px 0;">or</div>
-      <div class="upload-zone" style="margin-bottom:16px;" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)">
+
+    <!-- Full upload component — same as landing, so user can retry -->
+    <div class="error-upload-wrap">
+      <input class="url-input" id="error-url-input" type="text" placeholder="https://yourproduct.com" oninput="currentUrl=this.value.trim()" style="margin-bottom:0;"/>
+      <div style="text-align:center;font-family:var(--mono);font-size:14px;font-weight:500;color:var(--ink);margin:20px 0;">or</div>
+      <div class="upload-zone" id="error-upload-zone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
         <input type="file" accept="image/png,image/jpeg,image/webp" onchange="onFileSelect(this)" id="error-file-input"/>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--ink3);text-align:center;padding:8px 0;">
-          <strong style="color:var(--ink2);">Drag and drop files here</strong> or<br>
-          <span style="font-size:10px;margin-top:8px;display:block;">PNG, JPG, WebP</span>
+        <div id="error-upload-empty" style="display:flex;flex-direction:column;align-items:center;pointer-events:none;">
+          <svg width="22" height="21" viewBox="0 0 22 21" fill="none" style="margin-bottom:10px;">
+            <path d="M11 14V2m0 0L6 7m5-5 5 5M2 19h18" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--ink);line-height:1.5;">Drag and drop files here</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--ink);line-height:1.5;margin-bottom:12px;">or</div>
+          <button onclick="document.getElementById('error-file-input').click();event.stopPropagation();"
+            style="font-family:var(--mono);font-size:12px;padding:0 14px;height:32px;border:1px solid var(--accent);border-radius:2px;background:transparent;color:var(--ink);cursor:pointer;position:relative;z-index:1;pointer-events:all;">
+            Upload screenshot
+          </button>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--ink);margin-top:10px;">PNG, JPG, WebP</div>
         </div>
       </div>
-      <button class="btn-run" style="width:100%;height:32px;" onclick="goHome()">Run new audit →</button>
+      <div style="height:12px;"></div>
+      <div class="api-key-block">
+        <div class="api-key-label">Input your Anthropic API key</div>
+        <div class="api-key-row">
+          <input class="api-key-input" id="error-api-key-input" type="password" placeholder="sk-ant-…" oninput="currentApiKey=this.value.trim()"/>
+          <button class="api-key-save" onclick="saveApiKey()">Save key</button>
+        </div>
+      </div>
+      <div style="height:12px;"></div>
+      <button class="run-btn" onclick="retryAudit()">
+        RUN NEW AUDIT
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0-4-4m4 4-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
+
   </div>
 </div>
 
@@ -661,13 +694,29 @@
 
   function onFileSelect(input) {
     if (!input.files || !input.files[0]) return;
-    currentFile = input.files[0];
+    const file = input.files[0];
+    const accepted = ['image/png', 'image/jpeg', 'image/webp'];
+
+    // Wrong file type — show inline error, don't accept the file
+    if (!accepted.includes(file.type)) {
+      const ext = file.name.split('.').pop().toUpperCase();
+      document.getElementById('file-type-error-msg').textContent =
+        `${ext} files aren't supported. Please upload a PNG, JPG, or WebP screenshot.`;
+      document.getElementById('file-type-error').classList.add('visible');
+      input.value = '';
+      setTimeout(() => document.getElementById('file-type-error').classList.remove('visible'), 4000);
+      return;
+    }
+
+    // Clear any previous error
+    document.getElementById('file-type-error').classList.remove('visible');
+
+    currentFile = file;
     const url = URL.createObjectURL(currentFile);
     document.getElementById('preview-thumb').src = url;
     document.getElementById('preview-name').textContent = currentFile.name;
     document.getElementById('upload-empty').style.display = 'none';
     document.getElementById('upload-confirmed').style.display = 'flex';
-    // Also update URL input placeholder to signal screenshot takes priority
     document.getElementById('url-input').placeholder = 'Screenshot selected — or paste a URL to override';
   }
 
@@ -678,19 +727,178 @@
     document.getElementById('upload-confirmed').style.display = 'none';
     document.getElementById('upload-empty').style.display = 'flex';
     document.getElementById('url-input').placeholder = 'https://yourproduct.com';
+    document.getElementById('file-type-error').classList.remove('visible');
   }
 
   function handleDrop(e) {
     e.preventDefault();
     document.getElementById('upload-zone').classList.remove('drag-over');
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      const fi = document.getElementById('file-input');
-      fi.files = dt.files;
-      onFileSelect(fi);
+    if (!file) return;
+    // Simulate file input selection for validation
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const fi = document.getElementById('file-input');
+    fi.files = dt.files;
+    onFileSelect(fi);
+  }
+
+  function retryAudit() {
+    // Pull updated URL from error page input if filled
+    const errUrl = document.getElementById('error-url-input').value.trim();
+    if (errUrl) currentUrl = errUrl;
+    startAudit();
+  }
+
+  // ── AUDIT ──
+  async function startAudit() {
+    // Validation: no input
+    if (!currentUrl && !currentFile) {
+      const card = document.getElementById('input-card');
+      if (card) {
+        card.style.animation = 'none';
+        card.offsetHeight;
+        card.style.animation = '';
+        card.classList.add('shake');
+        setTimeout(() => card.classList.remove('shake'), 400);
+      }
+      document.getElementById('url-input')?.focus();
+      return;
     }
+
+    // Validation: no API key
+    if (!currentApiKey) {
+      const keyInput = document.getElementById('api-key-input');
+      keyInput.classList.add('error');
+      keyInput.focus();
+      showApiKeyError('Enter your Anthropic API key to run an audit. Get one free at console.anthropic.com');
+      setTimeout(() => keyInput.classList.remove('error'), 3000);
+      return;
+    }
+
+    const subject = currentFile ? currentFile.name : currentUrl;
+    document.getElementById('loading-subject').textContent = subject;
+    showPage('loading');
+    startLoadingAnim();
+
+    try {
+      let imageData = null;
+      let mediaType = 'image/png';
+
+      if (currentFile) {
+        imageData = await fileToBase64(currentFile);
+        mediaType = currentFile.type || 'image/png';
+      }
+
+      const messages = buildMessages(currentUrl, imageData, mediaType);
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': currentApiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        const status = response.status;
+        if (status === 401) throw new Error('AUTH_ERROR');
+        if (status === 429) throw new Error('RATE_LIMIT');
+        if (status === 400) throw new Error('BAD_REQUEST');
+        throw new Error(err.error?.message || 'API_ERROR_' + status);
+      }
+
+      const data = await response.json();
+      const raw = data.content.map(b => b.text || '').join('');
+      const clean = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+
+      let audit;
+      try {
+        audit = JSON.parse(clean);
+      } catch(e) {
+        const match = clean.match(/\{[\s\S]*\}/);
+        if (match) audit = JSON.parse(match[0]);
+        else throw new Error('PARSE_ERROR');
+      }
+
+      finishLoadingAnim();
+      setTimeout(() => renderResults(audit, subject), 600);
+
+    } catch(err) {
+      const msg = err.message || '';
+      const srcLabel = currentFile ? currentFile.name : currentUrl;
+
+      // Set source label on error page
+      const srcEl = document.getElementById('error-source');
+      if (srcEl) srcEl.textContent = (currentFile ? 'Screenshot: ' : 'URL: ') + srcLabel;
+
+      // Pre-fill URL field on error page
+      if (!currentFile && currentUrl) {
+        document.getElementById('error-url-input').value = currentUrl;
+      }
+
+      let title, body;
+
+      if (!navigator.onLine) {
+        title = 'No internet connection.';
+        body = 'UXLens needs an internet connection to run audits. Check your Wi-Fi or network and try again.';
+
+      } else if (msg === 'AUTH_ERROR' || msg.includes('401') || msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('invalid x-api-key')) {
+        // Return to landing and show inline — don't redirect to error page
+        showApiKeyError('That API key wasn\'t recognised. Double-check it at console.anthropic.com — keys start with sk-ant- and are case-sensitive.');
+        document.getElementById('api-key-input').classList.add('error');
+        setTimeout(() => document.getElementById('api-key-input').classList.remove('error'), 3000);
+        showPage('landing');
+        return;
+
+      } else if (msg === 'RATE_LIMIT' || msg.includes('429') || msg.toLowerCase().includes('rate limit')) {
+        title = 'Slow down — too many requests.';
+        body = 'You\'ve sent too many audits in a short window. Anthropic\'s rate limit usually resets within 60 seconds. Wait a moment and try again.';
+
+      } else if (msg === 'BAD_REQUEST' || msg.includes('400')) {
+        title = 'This request couldn\'t be processed.';
+        body = 'This usually means the image file is too large (keep it under 4MB) or the URL format is invalid. Try compressing your screenshot or double-checking the URL.';
+
+      } else if (msg === 'PARSE_ERROR' || msg.toLowerCase().includes('parse') || msg.toLowerCase().includes('json')) {
+        title = 'The audit response was unreadable.';
+        body = 'The AI returned an unexpected format this time — this occasionally happens. Try running the audit again, it usually works on a second attempt.';
+
+      } else if (msg.includes('403')) {
+        title = 'Access denied.';
+        body = 'Anthropic declined this request. Your API key may not have the right permissions, or your account may have a usage restriction. Check your account at console.anthropic.com.';
+
+      } else if (msg.includes('500') || msg.includes('502') || msg.includes('503')) {
+        title = 'Anthropic is having issues.';
+        body = 'The AI service returned a server error — this isn\'t something you can fix. Check status.anthropic.com for outages, and try again in a few minutes.';
+
+      } else if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('network')) {
+        title = 'Couldn\'t reach the AI service.';
+        body = 'The request to Anthropic didn\'t go through. This is usually a network issue — check your connection and try again. If it keeps happening, check status.anthropic.com.';
+
+      } else {
+        // Catch-all — URL errors, paywalls, 404s, etc.
+        title = 'Page couldn\'t be captured.';
+        body = 'This URL may be behind a login, paywall, or returning an error page. UXLens needs a publicly accessible page to analyse. Try uploading a screenshot of the page instead.';
+      }
+
+      document.getElementById('error-title').textContent = title;
+      document.getElementById('error-body').textContent = body;
+      showPage('error');
+    }
+  }
+
+  function showApiKeyError(msg) {
+    const el = document.getElementById('api-key-error');
+    if (el) { el.textContent = msg; el.classList.add('visible'); }
+    document.getElementById('api-key-saved').classList.remove('visible');
   }
 
   function switchTab(id, el) {
